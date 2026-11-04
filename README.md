@@ -85,13 +85,15 @@ Use the provider dashboard for page views, popular articles, referrers, and visi
 
 ## Diagrams
 
-Keep editable `.excalidraw` scenes in `content/diagrams/`. Open them at https://excalidraw.com. The builder exports rectangles, lines, arrows, ellipses, and text to SVG with Rough.js. More complex scenes need a direct SVG export or an extension of the exporter.
+Keep editable `.excalidraw` scenes in `content/diagrams/`. Open them at https://excalidraw.com. Every `.excalidraw` file in `content/diagrams/` is exported automatically. The renderer uses the scene coordinates, text, colors, font sizes, and arrow direction, with bounds computed from the drawing. Rectangles, lines, arrows, ellipses, and text are supported. Unsupported elements fail the build explicitly; extend `scripts/diagrams.mjs` before using them. Builds never rewrite the source scenes.
 
 In a post, reference a diagram like this:
 
 ```md
 ![Explain the diagram in one sentence.](../../diagrams/route-pipeline.svg)
 ```
+
+See [content/VOICE.md](content/VOICE.md) for the editorial rules. The current agent series covers the runtime boundary, model routing, prompt-cache layout, and durable state after compaction.
 
 ## Development checks
 

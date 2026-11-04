@@ -1,6 +1,6 @@
 ---
 title: "A VM snapshot is not a backup"
-description: "Useful checkpoints, independent copies, and a restore you have actually tried."
+description: "Try restoring without the original virtual machine or its host disk."
 topic: systems
 concepts: ["linux", "virtual-machines", "reliability"]
 date: 2022-09-22
@@ -11,30 +11,22 @@ order: 21
 period: "2022 / 23"
 ---
 
-Virtual machines are a good place to experiment because a mistake does not have to become a reinstall.
+A snapshot is convenient before an experiment. Change the package, break the configuration, roll back.
 
-A snapshot makes that convenient. It can capture a checkpoint you can return to before changing packages, editing a configuration, or testing something unfamiliar. The mistake is assuming that convenience also gives you an independent backup.
+What I want to know next is where that checkpoint lives and what it depends on.
 
-## Ask where the checkpoint lives
+Depending on the hypervisor, a snapshot can be part of a chain that still needs the original virtual disk. If the host disk fails, the checkpoint stored beside it can disappear too.
 
-The exact storage model depends on the hypervisor. A snapshot may depend on the original virtual disk and a chain of later changes. If the host disk fails, the snapshot stored beside that disk may disappear with it.
+![A VM disk and dependent snapshot live on one host disk. An independent backup lives on separate storage and can be restored to another host.](../../diagrams/vm-backup.svg)
 
-A backup should be recoverable independently of the machine and storage you are protecting. Its value is established by a restore, not by the presence of a file with a reassuring name.
+## Check what a restore would recover
 
-## Decide what must be consistent
+A running guest can be halfway through a write. Filesystem consistency and application consistency are different requirements. For a database, use a backup method that understands its recovery rules.
 
-A running guest may be in the middle of a write. A filesystem-consistent image is not automatically an application-consistent copy of every service inside it.
+For a small experiment, shutting the guest down before taking a checkpoint removes some uncertainty. Record the guest configuration and the change you're about to make so the result can be compared.
 
-For an experiment, shutting down the guest before creating a checkpoint can remove some uncertainty. For a database, use a backup method that understands the database and verify its restore procedure. Avoid treating every disk image as equally recoverable.
+After rollback, verify the state you intended to recover. Shared folders and external databases may not have rolled back with the guest.
 
-## Keep the experiment small
+The useful recovery test starts on a separate destination. Can you restore the machine, boot it, and read the required data without relying on the original VM?
 
-Write down the guest configuration and the change you are about to make. Take a checkpoint when it helps. Then make one meaningful change and inspect the result.
-
-If you roll back, verify that the intended state returned. Shared folders, external databases, and other systems outside the guest may not roll back with it.
-
-## Try losing the original
-
-A useful recovery exercise starts with a separate destination. Can you restore the guest, boot it, and read the data without relying on the original VM still being present?
-
-Snapshots are excellent shortcuts inside a workflow. Backups answer a different question: what remains recoverable when the original environment is gone?
+Snapshots make experimentation less tedious. An independently recoverable copy is what helps after the original environment is gone.

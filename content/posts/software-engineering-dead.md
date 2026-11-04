@@ -1,6 +1,6 @@
 ---
 title: "Is software engineering dead?"
-description: "Writing code got cheaper. Deciding what should happen is still work."
+description: "Code got cheaper. The decisions around it still have to be made."
 topic: essays
 concepts: ["agents", "judgment", "work"]
 date: 2026-01-29
@@ -11,32 +11,16 @@ order: 10
 period: "2025 / 26"
 ---
 
-If software engineering means typing implementations from a clear specification, a large part of that work is getting cheaper.
+A lot of implementation work is getting cheaper. Pretending that won't change teams or jobs seems wishful.
 
-I think the more interesting question is what happens when the specification is missing, contradictory, or wrong.
+But take a request as ordinary as “add an export.” Which records? Which permissions? Which point in time? What happens if the export takes ten minutes or includes a record the user just lost access to?
 
-## Someone still has to decide
+Someone has to settle those questions. Generating the handler faster doesn't make them disappear. It can make it easier to ship an answer before anyone notices there was a decision.
 
-A customer asks for an export. Which records should it include? Who may download it? What happens if it takes ten minutes? Can it expose deleted data? Does it need to reproduce the state at the moment the request was made?
+I also don't find “judgment still matters” very reassuring on its own. If fewer people can produce the same amount of implementation, the way work is divided will change. Being good at a task doesn't guarantee the market will keep buying it in the same quantity.
 
-Those decisions are software engineering too. They were easy to overlook when implementation consumed most of the calendar.
+The thing I'd keep practicing is getting from an unclear request to a result you can check. Understand the user, identify the constraints, build a small version, and inspect what it does. Then change your mind when the evidence warrants it.
 
-Faster code generation does not answer them automatically. It can make it easier to commit to an answer before anyone notices there was a question.
+Models can help throughout that process. You still need a way to distinguish a convincing answer from a system that works.
 
-## The work is changing anyway
-
-It would be convenient to say nothing important changes because judgment still matters. I do not believe that either.
-
-If one person can build and revise an implementation faster, teams will change how they divide work. Some tasks will need fewer people. Other projects will become worth attempting for the first time. The transition will not distribute its benefits neatly.
-
-Being good at a task does not guarantee that the market will continue buying the same amount of it.
-
-## Build a better feedback loop
-
-The skill I would invest in is turning an uncertain problem into a testable decision. Understand the user. Name the constraints. Build something small. Inspect what actually happens. Revise.
-
-Tools can participate in every step. You still need a way to tell whether the result is useful and whether its failures are acceptable.
-
-I do not think engineering disappears when writing code becomes easier. I think the gap between producing code and taking responsibility for a system becomes harder to ignore.
-
-That is a demanding change. It is also a reason to learn more of the system around the code.
+I don't think that work disappears. I do think we'll have less room to hide behind the amount of code it took.

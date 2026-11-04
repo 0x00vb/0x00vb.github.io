@@ -1,6 +1,6 @@
 ---
 title: "An agent needs a test bench"
-description: "Measure the whole task, including what the agent should refuse to do."
+description: "Check the tool calls and the resulting state, including runs that should stop."
 topic: ai
 concepts: ["evaluation", "agents", "security"]
 date: 2026-04-07
@@ -11,30 +11,28 @@ order: 3
 period: "2025 / 26"
 ---
 
-An agent demo is easy to admire because you are usually watching the run that worked.
+The agent says the refund is done. I want to see the refund record.
 
-A test bench asks a less comfortable question: what happens across many tasks, including the ones that should stop without taking action?
+A final answer is a claim about the task. The test needs an observation from the system the agent was supposed to change.
 
-## Define success before running it
+## Give the test a starting state
 
-For a support agent, “answer the customer” is too vague. A useful case specifies the starting state, the available tools, the permitted changes, and the expected final state.
+For a refund case, define the order, account, allowed amount, available tools, and expected result. Use a test environment with records you can inspect.
 
-If the task is to find an order, success might require returning the right order without changing anything. If the task is to issue a refund, success might require a valid amount, the right account, and the expected authorization.
+Then check three things:
 
-A fluent explanation cannot compensate for a wrong mutation.
+- Did it use the right account and operation?
+- Did it stay inside its authority?
+- Does the target system contain the expected change?
 
-## Check the trace and the state
+A correct final state can still hide an unsafe tool call along the way. Keep the trace as well as the result.
 
-Look at both the tool calls and the result. An agent may arrive at the right final state through an unsafe route. It may also write an excellent summary of work it never performed.
+## Test the run that gets awkward
 
-Use deterministic checks where you can: identifiers, amounts, file contents, database records, tool permissions. Use human review or carefully calibrated model judgment for genuinely qualitative criteria. Do not ask another model to guess whether an exact database update happened.
+Include a tool timeout after the action may have succeeded. Include a missing identifier. Include untrusted text telling the agent to ignore its instructions. Include a task that requires a decision from the user before continuing.
 
-## Include awkward cases
+Measure recovery separately. An agent that catches its own wrong click is different from one that never makes it. Both can finish the demo; their operating costs are different.
 
-Missing information, stale results, tool timeouts, contradictory instructions, and untrusted text belong in the suite. Include tasks where the correct response is to ask for a decision or decline an action outside the user's authority.
+Use exact checks for exact properties: IDs, amounts, files, database rows. Human review or a calibrated model judge can help with prose quality. Neither should guess whether a database mutation happened.
 
-Keep the cases versioned. Run them when the prompt, model, tool schema, or execution environment changes. Repeat stochastic runs enough to notice variability rather than treating one pass as certainty.
-
-Track cost and latency alongside task success. A system that completes a task after twenty expensive detours may be technically correct and operationally unusable.
-
-The point is to make improvement visible. Without a stable set of tasks, you are mostly comparing how convincing the latest demonstration felt.
+Track completion rate, cost per completed task, latency, and unauthorized actions. Repeat stochastic cases. One successful run after a prompt change is a reason to run the suite, not a reason to replace it.

@@ -1,6 +1,6 @@
 ---
 title: "Your training loss is not the product"
-description: "A lower number can hide the failure your users actually care about."
+description: "Inspect which decisions improved, not only whether the average went down."
 topic: ai
 concepts: ["evaluation", "ml", "performance"]
 date: 2025-11-18
@@ -11,28 +11,22 @@ order: 2
 period: "2025 / 26"
 ---
 
-A training run finishes with a better loss. The product still makes the same embarrassing mistake.
+A lower training loss can coexist with the same mistake in the product.
 
-There is no contradiction. The objective measured one thing. You needed another.
+Maybe frequent examples improved while a rare class got worse. Maybe predicting the dataset better doesn't improve the workflow you actually care about.
 
-## Ask what the number contains
+Start by naming an observable behavior: preserve an identifier, recognize a cancellation, or abstain when the document doesn't contain the answer. “Better quality” is hard to test.
 
-An average can improve while a small, important slice gets worse. A classifier might become more accurate on frequent examples and less reliable on the rare class that matters most. A language model might become better at predicting text without becoming better at completing your particular workflow.
+## Split the data like the system will encounter it
 
-The first step is to name the behavior you need. Not “higher quality.” Something you can observe: distinguish a refund request from a cancellation, preserve an identifier, or abstain when a document does not contain an answer.
+Use validation data while choosing the model. Keep a separate test set for the final estimate. Once you repeatedly tune against the test results, that set has become part of development.
 
-## Keep a separate test
+Watch for the same user, duplicate records, or future information appearing on both sides of the split. For a time-dependent task, holding out later data may be more informative than a random split.
 
-Use validation data while choosing the model. Keep a separate test set for a less biased estimate after those choices. If you repeatedly inspect the test set and adjust the system around it, it has become another development set.
+## Read a few wrong predictions
 
-Make the split match deployment. Random splitting can be misleading when nearly identical records, the same users, or future information appear on both sides. For a time-dependent task, a chronological holdout may tell you more.
+Put the input, expected behavior, and prediction next to each other. Is the label ambiguous? Is information missing? Did the model fail on a condition that appears often in real use?
 
-## Read the failures
+Slice the results by conditions that matter, such as language, input length, or source. Keep a small set of examples that expose different failure modes.
 
-Keep a small collection of examples that expose distinct mistakes. Inspect predictions alongside the input and the expected behavior. Separate labeling ambiguity from a clear model error.
-
-Then slice the evaluation by conditions that matter: language, input length, missing fields, unfamiliar sources. Those slices should come from actual use, not an unlimited hunt for a flattering metric.
-
-Training loss is useful feedback for optimization. A good evaluation connects that optimization to the thing you intend to ship.
-
-The practical question after a better run is: which previously wrong decisions became right, and what did we give up?
+After a better run, I want to know which previously wrong decisions became right and whether another group of cases regressed. The loss curve can tell me that optimization is progressing. It can't answer the product question on its own.

@@ -1,6 +1,6 @@
 ---
 title: "Clusters are not delivery routes"
-description: "Grouping stops is one stage. Ordering them under real constraints is another."
+description: "Carry the grouping result through to a feasible trip before judging it."
 topic: ai
 concepts: ["clustering", "architecture", "evaluation"]
 date: 2023-08-02
@@ -11,36 +11,24 @@ order: 25
 period: "2022 / 23"
 ---
 
-A map of colored clusters can look like a finished routing system. It is an intermediate result.
+The k-means and DBSCAN experiments produced groups of stops. There was still no route.
 
-The project experiments with k-means and DBSCAN helped divide the input into candidate groups. The remaining question was how to turn those groups into feasible trips.
+A group doesn't tell a driver where to start, which stop comes next, or whether the vehicle can carry the workload.
 
-## Separate the stages
+![Validated stops become candidate groups. Ordering uses travel costs and constraints, then the finished trip is checked for feasibility.](../../diagrams/route-pipeline.svg)
 
-A simple pipeline starts with validated stops, then candidate groups, then vehicle assignments and an ordering of visits. The stages can inform each other, but they answer different questions.
+## Define what improves
 
-A cluster does not specify a starting depot. It does not encode which roads are usable. It does not establish whether a vehicle can carry the workload or arrive within a required window.
+“Optimize the route” could mean less total travel, a shorter longest shift, fewer vehicles, or meeting every time window. Those objectives can disagree.
 
-![Input stops pass through candidate grouping and then visit ordering. Clustering alone does not produce a feasible route.](../../diagrams/route-pipeline.svg)
+Pick one and write down the constraints: depot, capacity, working hours, service time, required return trip. A pretty grouping can make those constraints harder to satisfy.
 
-## Write the objective down
+For a first ordering baseline, a simple heuristic is enough to expose bad groups. Include the depot and use a distance or travel-time model that fits the area. Straight-line distance won't represent a bridge, a one-way street, or a restricted turn.
 
-“Optimize the route” leaves too much open. You might be minimizing total travel time, reducing the longest driver's day, using fewer vehicles, or meeting every time window.
+## Compare complete plans
 
-Those goals can disagree. A geographically tidy grouping may produce an unfair workload. A short route may be infeasible because the vehicle is too small.
+Use the same stops and assumptions for both methods. Record infeasible cases and unassigned stops instead of dropping them from the comparison.
 
-Choose an objective and state the constraints before comparing methods.
+Then look at the route cost, workload distribution, and sensitivity to small input changes. A slightly better clustering objective doesn't guarantee improvement in any of those.
 
-## Start with a modest baseline
-
-A simple ordering heuristic can be enough to reveal problems with the grouping stage. Use a distance or travel-time model appropriate to the actual area. Keep the depot and return trip in the calculation when the task requires them.
-
-Then inspect failures: unassigned stops, impossible workloads, excessive travel between neighboring areas, and cases where a small input change produces a large route change.
-
-## Measure the whole pipeline
-
-Compare complete plans using the same stops and assumptions. Retain infeasible cases rather than quietly removing them from the comparison.
-
-The useful outcome of a clustering experiment is not the number of colors on a map. It is evidence that one stage helps the routing problem you actually need to solve.
-
-That distinction also makes the software easier to change. A grouping method can be replaced without pretending that it was the entire planner.
+Keeping grouping and routing separate lets me compare a grouping method without rewriting the whole planner.

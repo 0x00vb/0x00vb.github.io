@@ -1,6 +1,6 @@
 ---
 title: "A good bug report saves a round trip"
-description: "Give the person fixing it a short path from claim to reproduction."
+description: "Show the boundary crossing with the smallest reproducible example."
 topic: security
 concepts: ["security", "communication", "evaluation"]
 date: 2024-02-08
@@ -11,32 +11,28 @@ order: 8
 period: "2023 / 24"
 ---
 
-A report is useful when someone else can understand the issue, reproduce it safely, and decide what to fix.
+The engineer reading your report should be able to reproduce the issue without first interviewing you.
 
-Length is not a substitute for that sequence. A page of alarming language can still leave the engineer guessing which request mattered.
+I'd start here:
 
-## Start with the boundary
+```text
+Expected: user A can read invoices in tenant A.
+Observed: user A can read a test invoice in tenant B.
+Prerequisites: two test accounts, one invoice per tenant.
+Steps: the minimum request sequence that reproduces it.
+Evidence: sanitized requests and responses.
+```
 
-Describe the expected behavior, the observed behavior, and the condition that separates them. “A user in tenant A can retrieve a synthetic invoice belonging to tenant B” is clearer than “critical access control vulnerability.”
+Use a system you own or have permission to test. Stay inside the program's scope and stop once you have enough evidence. Collecting more people's data doesn't make the report better.
 
-Severity can follow from demonstrated impact. It should not carry the explanation.
+## Separate what happened from what might happen
 
-## Keep the reproduction small
+“The response contained tenant B's test invoice” is an observation. “Every invoice may be exposed” is a hypothesis unless you have an authorized basis for saying more.
 
-List the environment, relevant prerequisites, and the minimum steps. Include sanitized request and response examples when they make the issue easier to reproduce. Remove credentials, unrelated identifiers, and personal data.
+Explain the impact that follows from the evidence. Include timing or ordering if it matters. If the issue only reproduced once, say that too.
 
-If a request sequence matters, preserve its order. If timing matters, state that explicitly. If you only observed the behavior once, say so instead of presenting it as deterministic.
+Remove credentials and unrelated personal data from the examples. Keep the details needed to repeat the failure.
 
-A useful proof shows the boundary crossing with the least access necessary. Respect the program's scope, stop when you have sufficient evidence, and use its stated reporting channel.
+A remediation note can point to the missing policy check. Avoid prescribing an exact patch when you don't know the internal design.
 
-## Separate evidence from interpretation
-
-“The response contained this test record” is an observation. “This may affect all records of this type” is a hypothesis until you have an authorized basis for saying more.
-
-You can explain the plausible impact without expanding access to prove the broadest possible version of it.
-
-## Suggest a direction, not a blind patch
-
-A remediation note can identify the missing policy or validation. Avoid prescribing a change that assumes internal architecture you have not seen.
-
-The best report leaves a clean handoff: what happened, how to reproduce it, why it matters, and what remains unknown. That is enough to start useful work without another exchange just to recover the basic facts.
+The report is finished when another person can follow the same path, see the same failure, and understand which rule didn't hold. The severity adjective can wait until then.

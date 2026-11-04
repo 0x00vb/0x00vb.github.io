@@ -1,6 +1,6 @@
 ---
 title: "Before you split the monolith"
-description: "Separate the problem you have from the architecture you want to try."
+description: "Find the bottleneck before adding another deployment boundary."
 topic: systems
 concepts: ["architecture", "databases", "deployment"]
 date: 2024-07-19
@@ -11,34 +11,22 @@ order: 4
 period: "2024 / 25"
 ---
 
-A slow application does not tell you it needs microservices. It tells you something is slow.
+If the API is slow, I want to see a trace before I see a new architecture diagram.
 
-That sounds obvious until a diagram with six boxes starts looking like a performance plan.
+Where did the request spend its time? A query, a saturated pool, an external call, serialization? Splitting the application won't answer that question for you.
 
-## Find the expensive boundary
+## Try a boundary inside the process
 
-Trace a representative request. How much time goes to the database? How many queries does it issue? Is a connection pool saturated? Is work repeated? Does a synchronous call wait on something that could happen later?
+Separate responsibilities into modules. Give them clear interfaces. Stop letting arbitrary code reach into another module's tables.
 
-A missing index survives a service extraction. Now it also has a network boundary.
+That gives you a boundary you can test without introducing network calls, partial failures, or another deployment. It also makes a later extraction less speculative.
 
-![One application contains separate modules and connects to one database. A measured bottleneck can be extracted later without splitting everything at once.](../../diagrams/monolith.svg)
+![An API and worker share one application boundary. The database remains separate. Extracting a module adds a network and failure boundary.](../../diagrams/monolith.svg)
 
-## Modules are a real architectural tool
+A service can be worth it when a workload needs independent scaling, a different failure boundary, or separate ownership. Image processing and an interactive API might reasonably need different resources.
 
-You can separate responsibilities inside one deployable. Define interfaces, make ownership explicit, and stop reaching into another module's tables from arbitrary places.
+Write down what that independence buys. Then account for retries, version compatibility, observability, and operations that can succeed in one service and fail in another.
 
-That work is valuable even if you eventually extract a service. It lets you discover whether the boundary is stable before paying for remote calls, retries, independent releases, and distributed debugging.
+For the next experiment, pick the smallest change that tests the diagnosis: add the index, bound concurrency, move slow work to a queue, or isolate the module. Compare tail latency and errors under the same workload.
 
-## Know what independence buys
-
-A service can make sense when it needs a different scaling pattern, a different failure boundary, or genuinely independent ownership. Background image processing and an interactive API may have very different resource needs.
-
-Write down that reason. Then write down the operating cost: deployment, monitoring, authentication between services, version compatibility, and data consistency.
-
-If one user action now spans several services, decide what happens when only half the work succeeds. That decision is part of the architecture, not cleanup after deployment.
-
-## A smaller next step
-
-Try the cheapest change that tests your diagnosis. Fix the query, bound concurrency, add a worker, or isolate a module. Measure the result under comparable traffic.
-
-A monolith is not a promise to remain one forever. It is a deployment choice you can revise when you have a specific reason. The useful question is what the next boundary makes easier and whether that benefit covers its cost.
+A missing index is quite capable of surviving a migration to microservices.

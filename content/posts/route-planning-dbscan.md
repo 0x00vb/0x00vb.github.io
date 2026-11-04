@@ -1,6 +1,6 @@
 ---
 title: "Why I tried DBSCAN for route planning"
-description: "A second clustering approach, with a different idea of what a group should be."
+description: "Compare density-based groups with the k-means baseline."
 topic: ai
 concepts: ["ml", "clustering", "evaluation"]
 date: 2023-05-11
@@ -11,32 +11,24 @@ order: 24
 period: "2022 / 23"
 ---
 
-After starting the route-planning project with k-means, I tried DBSCAN. The attraction was its different treatment of groups and isolated points.
+After k-means, I tried DBSCAN in the route-planning project. I wanted to see what changed when the grouping method could leave isolated stops unassigned.
 
-K-means asks for a number of clusters. DBSCAN builds groups from local density and can leave points unassigned as noise. That gave the project another way to represent a map of stops.
+K-means needs a chosen number of groups. DBSCAN grows groups around dense neighborhoods and can label points as noise. That is a different assumption about the input, not a guarantee of better routes.
 
-## Change the question carefully
+![On toy coordinates, k-means assigns an isolated stop to a group. DBSCAN can label that stop as noise.](../../diagrams/stop-clustering.svg)
 
-The question became: which stops belong to a dense neighborhood, and which need separate attention?
+## Be precise about distance
 
-That is useful for exploration. It still does not decide how to visit the stops or how to allocate drivers. An isolated delivery remains a delivery even if the algorithm labels it noise.
+The neighborhood radius, eps, and the support threshold, min_samples, determine what counts as dense. Their interpretation depends on the distance metric and its units.
 
-## Make distance explicit
+Don't mix degrees with kilometers. If using haversine distance, check the implementation's expected coordinate order and radians. A suitable local projection is another option for a compact area.
 
-Two parameters deserve particular attention: the neighborhood distance, eps, and the support needed for a core point, min_samples. Their meaning depends on the input representation and distance metric.
+Also, eps is a neighborhood radius, not a maximum cluster diameter. A chain of nearby dense regions can connect into a long group.
 
-For geographic coordinates, do not mix degrees with kilometers. A haversine implementation expects angular input and returns angular distance; a local metric projection offers another approach. Choose one deliberately and keep its units consistent.
+Plot the assignments and inspect the noise points. An isolated delivery still needs service. Density changes across the area may also make one parameter setting awkward.
 
-## A cluster can stretch
+Compare the downstream plans using the same stops, travel-cost assumptions, and constraints as the k-means baseline. A map that looks more natural may still produce a worse day's driving.
 
-The neighborhood radius is not a maximum cluster diameter. Dense chains can connect points across a much larger area. That is especially relevant when a route planner needs compact, manageable territories.
+The diagram uses toy coordinates, not results from the project.
 
-A parameter setting that looks good in one part of a city may also behave poorly where stop density changes. Plot the groups, inspect the unassigned stops, and examine the long connections.
-
-## Compare the useful outcome
-
-Keep the same input and compare against the k-means baseline. Look at the downstream route constraints, not just whether the map looks more natural.
-
-DBSCAN was another candidate grouping stage. It made some assumptions easier to see, particularly the difference between an unusual point and a point the system can afford to ignore.
-
-Further reading: [scikit-learn's DBSCAN documentation](https://scikit-learn.org/1.3/modules/generated/sklearn.cluster.DBSCAN.html).
+[DBSCAN reference](https://scikit-learn.org/1.3/modules/generated/sklearn.cluster.DBSCAN.html).

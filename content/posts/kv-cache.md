@@ -1,6 +1,6 @@
 ---
-title: "The KV cache is a memory bill"
-description: "Why a longer conversation takes more room, even when the model stays the same."
+title: "Where the KV cache uses memory"
+description: "Account for running conversations as well as model weights."
 topic: ai
 concepts: ["memory", "inference", "gpu"]
 date: 2026-06-23
@@ -11,36 +11,28 @@ order: 1
 period: "2025 / 26"
 ---
 
-A model can fit on a GPU and still run out of memory when people start using it.
+A model fitting on the GPU is only the first part of the memory budget.
 
-Weights are only part of the allocation. During autoregressive generation, an attention layer can retain keys and values for previous tokens. Keeping them avoids recomputing those projections at every new decoding step. This is the KV cache.
+During generation, attention layers can retain keys and values for previous tokens. That avoids recomputing those projections at every decoding step. The retained tensors are the KV cache.
 
-## Context has a cost
-
-A rough cache-size estimate for a conventional transformer is:
+For a conventional full-attention transformer, a rough estimate is:
 
 ```text
-2 × layers × tokens × KV heads × head dimension × bytes per value
+KV bytes = 2 * layers * tokens * KV_heads * head_dim * bytes_per_value
 ```
 
-The two accounts for keys and values. Multiply again for independent sequences. This is an estimate for the cached tensors, not a formula for the server's whole memory footprint.
+Use KV heads, not query heads. Grouped-query and multi-query attention can make those counts different. This estimates cached tensors; it excludes weights, temporary buffers, allocator overhead, and runtime state. Sliding-window and other attention designs change the calculation.
 
-Use the number of KV heads, which can differ from the number of query heads. Architecture, quantization, allocation strategy, and attention variants all change the details.
+![A device's memory contains model weights, a KV cache that grows with active sequences, and workspace plus headroom. The regions are schematic, not measured sizes.](../../diagrams/kv-budget.svg)
 
-## Serving is a packing problem
+## Concurrency multiplies the problem
 
-One short request can be cheap. Many long requests arriving together can consume the space you expected to use for more concurrent work.
+Independent sequences need their own cache entries unless the serving implementation can share an eligible prefix. Long inputs and long outputs both affect how much space remains for new work.
 
-That creates a tradeoff between admitting more sequences and reserving memory for the ones already generating. A system with excellent throughput on short prompts may behave very differently when the context distribution changes.
+Paged allocation helps manage that space in blocks. Prefix reuse can avoid repeating some prefill work. Neither makes additional context free.
 
-Paged allocation helps manage the cache in blocks instead of requiring one large contiguous region for each sequence. Prefix caching can also reuse work when requests share an eligible prefix. These improve memory management and reuse; they do not make every additional token free.
+Measure the input-length and output-length distributions you expect to serve. Track concurrency, time to first token, and time between generated tokens separately.
 
-## Measure the workload you have
+A single short prompt tells you little about how the server behaves when several users submit long documents at once.
 
-Track input lengths, output lengths, concurrency, and the latency readers actually feel. Time to first token and time between subsequent tokens describe different parts of the experience.
-
-A benchmark with one tiny prompt tells you very little about a service handling long documents.
-
-Before choosing a larger model, sketch the memory budget: weights, cache, temporary work, runtime overhead, and headroom. Then test the actual distribution of requests. Model size alone is an incomplete capacity plan.
-
-Further reading: [vLLM's explanation of automatic prefix caching](https://docs.vllm.ai/en/latest/features/automatic_prefix_caching.html).
+[vLLM's prefix caching documentation](https://docs.vllm.ai/en/latest/features/automatic_prefix_caching.html).

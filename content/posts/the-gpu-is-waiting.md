@@ -1,6 +1,6 @@
 ---
 title: "Your GPU is probably waiting for memory"
-description: "A small mental model for why more compute does not always make a kernel faster."
+description: "Count the data movement before buying more arithmetic."
 topic: ai
 concepts: ["gpu", "memory", "performance"]
 date: 2026-10-12
@@ -11,32 +11,22 @@ order: 0
 period: "2025 / 26"
 ---
 
-You can buy more arithmetic than you know what to do with. Feeding it is another problem.
+Adding two arrays is one addition per output. For 32-bit floats, it also means reading two four-byte values and writing another four bytes.
 
-A useful first question about a GPU kernel is how much work it does for each byte it moves. That ratio is called arithmetic intensity. A kernel that loads two numbers, adds them, and writes the result spends very little time doing arithmetic relative to moving data.
+That is roughly twelve bytes moved for one addition, before considering cache effects and implementation details. A billion elements implies about twelve billion bytes of traffic.
 
-Adding more arithmetic units does not remove that traffic.
+Divide that traffic by achieved memory bandwidth and you get a useful lower bound on runtime. Use measured bandwidth, not the number on the hardware's product page.
 
-## Count the bytes first
+## Reuse changes the workload
 
-Imagine adding two arrays of 32-bit floats. For every output, you read two four-byte values and write one four-byte value. That is roughly twelve bytes of traffic for one addition, before considering cache effects or other overhead.
+Matrix multiplication can reuse values across many operations. A tiled kernel loads a block of values and does more work before fetching another one.
 
-For a billion elements, that means about twelve billion bytes. Divide that traffic by the bandwidth you actually measure, and you have a useful lower bound on runtime. The advertised peak is a ceiling, not the bandwidth your kernel is guaranteed to get.
+![A tile is loaded from device memory and reused for several operations on the GPU. Reuse reduces repeated global-memory transfers.](../../diagrams/gpu-memory.svg)
 
-![Data moves from device memory through a reusable tile to the arithmetic units. Reusing a tile reduces trips to device memory.](../../diagrams/gpu-memory.svg)
+Arithmetic intensity is the work performed per byte moved. It helps distinguish a kernel starved for data from one limited by arithmetic throughput. Shapes, data types, access patterns, and implementation still matter. “It's a matrix multiply” isn't enough to identify the bottleneck.
 
-## Reuse changes the equation
+I would benchmark a trusted implementation first, then measure GPU elapsed time, traffic, and achieved bandwidth on representative sizes. Keep host-to-device transfers separate from work on data already resident on the GPU.
 
-Matrix multiplication offers a different opportunity: values can participate in many operations. Loading a tile and reusing it lets the kernel do more arithmetic for each trip to device memory. Good access patterns matter too. Nearby threads reading nearby addresses can let the hardware combine requests.
+Change one thing at a time: reuse, access pattern, or batch shape. Check whether traffic fell and whether runtime improved. More compute won't help much while the arithmetic units are waiting for their next inputs.
 
-The exact result depends on the shapes, data types, hardware, and implementation. A matrix multiplication is not automatically compute-bound just because it contains lots of multiplications.
-
-## What I would measure
-
-Start with a trusted implementation and representative input sizes. Measure elapsed GPU time, traffic, and achieved bandwidth. Separate transfers between host and device from work already running on the device.
-
-Then change one thing. Does reuse reduce traffic? Do larger batches improve utilization? Does the kernel get faster, or does a different bottleneck take over?
-
-The useful habit is simple: draw the path the bytes take before counting the operations.
-
-Further reading: [NVIDIA's matrix multiplication performance guide](https://docs.nvidia.com/deeplearning/performance/dl-performance-matrix-multiplication/).
+[NVIDIA's matrix multiplication guide](https://docs.nvidia.com/deeplearning/performance/dl-performance-matrix-multiplication/).

@@ -1,6 +1,6 @@
 ---
 title: "Design tokens are an API"
-description: "Names and contracts matter more than the number of colors in the file."
+description: "Give components a stable role instead of making them depend on a color value."
 topic: design
 concepts: ["design-systems", "architecture", "communication"]
 date: 2025-06-13
@@ -11,34 +11,25 @@ order: 9
 period: "2024 / 25"
 ---
 
-A token named `gray-400` tells you what it looks like. A token named `text-muted` tells you what it is for.
+A token named gray-400 tells me the palette value. A token named text-muted tells me the intended role.
 
-Both can be useful. They belong at different levels of a design system.
+Both are useful, but a component usually benefits from depending on the role.
 
-## Separate the palette from the promise
+```text
+palette value -> semantic role -> component
+violet-600    -> action-primary -> button
+```
 
-Primitive tokens describe available values: a color ramp, spacing steps, font sizes. Semantic tokens describe roles: primary text, a surface, an interactive border.
+Changing the palette can then leave the component contract intact. Changing what the role means is a different operation and needs a look at the callers.
 
-A component using a semantic role can survive a palette change without knowing the implementation. That is the same advantage you expect from a useful software interface.
+## Dark mode exposes the assumptions
 
-But the name creates a promise. If `text-muted` is used for essential instructions, it still needs readable contrast. “Muted” should not become permission to make information disappear.
+A token called white doesn't explain whether it means text, a surface, or an inverted control. Map those roles deliberately in each theme.
 
-## Themes test the contract
+Check borders, focus, selected states, and disabled content. Essential instructions still need readable contrast even when the role is called muted. Mechanically inverting the palette won't preserve the hierarchy for you.
 
-Light and dark modes expose accidental assumptions. A token called `white` cannot explain whether it represents a foreground, a background, or an inverted element.
+The component contract also includes behavior. A shared button should settle focus, loading, disabled state, target size, and long labels. Otherwise each product still has to rediscover those details.
 
-Map each role deliberately in each theme. Do not mechanically invert the palette and assume the hierarchy survived. Borders, selected states, disabled content, and focus indicators all need a decision.
+I'd keep the role vocabulary small enough that an engineer can choose a token without comparing fifteen almost-identical names. Add examples showing where a role fits and where it doesn't.
 
-## Components need behavior too
-
-A shared button is more than padding and a radius. Its contract includes keyboard focus, disabled behavior, loading state, target size, and what happens when its label gets longer.
-
-If each product independently solves those details, you share an appearance without sharing the interaction.
-
-## Change it like an interface
-
-Before renaming a token or changing its meaning, inspect the callers. A value change may be safe; a semantic change may quietly break several contexts.
-
-Document a few good examples and the constraints that matter. Keep the API small enough that engineers can choose a role without searching through fifteen almost-identical names.
-
-The goal is to make correct decisions easier to repeat. A bigger token file is not evidence of a better system.
+The system earns its place when a good decision becomes easier to repeat. File size and token count aren't useful measures of that.

@@ -1,6 +1,6 @@
 ---
 title: "Courage is in shorter supply than genius"
-description: "Having the idea is often easier than letting it meet the world."
+description: "Sometimes the next useful step is an imperfect attempt."
 topic: essays
 concepts: ["judgment", "work", "learning"]
 date: 2026-07-16
@@ -11,32 +11,18 @@ order: 11
 period: "2025 / 26"
 ---
 
-There is a comfortable version of being ambitious: keep improving the plan until nobody can criticize the attempt.
+You can spend months thinking about something that takes twenty minutes to try.
 
-I recognize the appeal. While the work is private, it can still become exactly what you imagined. Publishing it makes the distance visible.
+I keep coming back to that. Another tool, another version of the plan, another week of preparation. Sometimes the work is necessary. Sometimes it is a way to avoid letting the idea be judged.
 
-## Preparation can become shelter
+The difference is whether the next step can actually answer a question. If I don't know whether anyone needs the thing, polishing its internals won't tell me much. Showing a rough version to one intended user might.
 
-Learning another tool is sometimes the right next step. Sometimes it is a way to postpone the part where another person can say the thing is confusing, unnecessary, or ordinary.
+I'm not arguing for reckless shipping. If the experiment can charge someone, expose their data, or damage something they rely on, make it safe first. Reduce the size of the bet. Use test data. Make the change reversible.
 
-The distinction is not how hard you are working. It is whether the work is reducing a real uncertainty or protecting you from a reaction.
+But there is usually a smaller attempt available than the one we're imagining.
 
-A rough prototype in front of one intended user may answer more than another week of polishing an assumption.
+Put the draft online. Build the ugly prototype. Ask the question. See what happens, then decide what deserves more work.
 
-## Courage is not carelessness
+The response may be disappointing. That is still information. An unclear explanation, the wrong audience, and an idea nobody needs are different problems. You only get to distinguish them after the attempt exists.
 
-Shipping a dangerous system without checking it is not bravery. Neither is making an irreversible decision simply to prove you can act.
-
-Useful courage has a smaller shape: state what you believe, make a bounded bet, and accept that the evidence may change your mind. Choose an attempt with consequences you can afford. Put the safety work where the actual risk is.
-
-You do not need to bet your entire life on the first version.
-
-## The less glamorous part
-
-Starting gets most of the attention. Returning after an indifferent response takes a different kind of nerve.
-
-It asks you to examine the work without turning its reception into a verdict on your identity. Perhaps the idea is weak. Perhaps the explanation is unclear. Perhaps you showed it to the wrong people. Those are different problems, and only one of them requires abandoning the idea.
-
-I cannot measure the world's supply of genius or courage. The title is a provocation, not a statistic. But I keep finding situations where another clever idea would help less than a small, honest attempt.
-
-This website belongs in that category.
+The title is an opinion. I can't count the world's supply of either. I just suspect that quite a few good ideas are waiting on someone being willing to try them badly first.

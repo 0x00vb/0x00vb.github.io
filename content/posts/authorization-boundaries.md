@@ -1,6 +1,6 @@
 ---
 title: "The ID is not the permission"
-description: "An ordinary object lookup can be the boundary your API forgot to enforce."
+description: "Scope the lookup to the caller, the resource, and the requested action."
 topic: security
 concepts: ["security", "architecture", "authorization"]
 date: 2023-08-17
@@ -11,32 +11,28 @@ order: 7
 period: "2023 / 24"
 ---
 
-An endpoint receives an object ID and returns the matching record. The code is short. The missing question is who is allowed to see that record.
+An API can have authentication on every endpoint and still return another customer's invoice.
 
-Knowing an identifier is not the same thing as having access to the object it names. An unguessable ID makes accidental discovery harder; it does not replace an authorization decision.
+The missing check is usually between the caller and the object being loaded.
 
-## Scope the lookup
+```sql
+SELECT * FROM invoices
+WHERE id = :invoice_id
+  AND tenant_id = :authorized_tenant;
+```
 
-In a multi-tenant application, a lookup often needs both the object identifier and an authorized tenant context. That context must come from verified membership, not simply a tenant ID supplied by the client.
+The tenant must come from verified membership. Taking both IDs from the request just moves the unchecked input into a longer query.
 
-Check the intended action too. Permission to read an invoice does not imply permission to refund it. A role name without an action and a resource is an incomplete rule.
+## Check the action too
 
-## Look beyond the main endpoint
+Reading an invoice and refunding it are separate permissions. Check the requested action against the resource's current state. A role string alone doesn't establish either.
 
-Downloads, exports, search, background jobs, and nested resources need the same boundary. A carefully protected detail page is not enough if an export can retrieve everything.
+Downloads, exports, nested resources, and background jobs need the same rule. So do caches. If a response varies by authorization context, an object ID alone may be an unsafe cache key.
 
-Caches also need attention. A response cached under an object ID alone can cross an access boundary if the content depends on the requesting user. Choose cache keys and caching rules that match the authorization model.
+![Users in separate tenants can access their own invoices. A cross-tenant request is denied before the record is returned.](../../diagrams/authorization.svg)
 
-## Test two identities
+I like a regression test with two users, two tenants, and two synthetic records. First prove that the allowed actions work. Then swap the identifiers and prove that the boundary holds. Run it only against systems you're authorized to test.
 
-A useful regression case creates two tenants with distinct users and objects. Confirm that each user can perform the intended action on their own object, then verify that crossing the boundary is denied.
+An unguessable ID is still an ID. Someone can obtain it from a link, a log, or another endpoint. The access decision has to survive that.
 
-Keep these checks in an environment you own or are explicitly authorized to assess. Use synthetic records. You do not need to collect someone else's data to demonstrate a broken boundary.
-
-## Make the rule visible
-
-Centralize policy where it is appropriate, but do not hide the resource context. A generic “is authenticated” middleware only establishes who is calling. It does not answer whether they can access this object.
-
-The habit worth keeping is to read every object lookup as two operations: find the record, and establish the caller's authority over the requested action.
-
-Further reading: [OWASP's API object authorization guidance](https://owasp.org/API-Security/editions/2023/en/0xa1-broken-object-level-authorization/).
+[OWASP's object authorization guidance](https://owasp.org/API-Security/editions/2023/en/0xa1-broken-object-level-authorization/).

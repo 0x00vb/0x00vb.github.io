@@ -3,7 +3,7 @@ import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 import matter from 'gray-matter';
 import { marked } from 'marked';
-import rough from 'roughjs/bundled/rough.cjs.js';
+import {renderDiagram} from './diagrams.mjs';
 
 export const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 export const topics = { ai: 'AI & ML', systems: 'Systems', security: 'Security', design: 'Design', essays: 'Essays' };
@@ -29,24 +29,6 @@ export async function loadPosts(directory = path.join(root, 'content/posts')) {
     result.push({...data, date, written, published, slug, content, raw, minutes: Math.max(1, Math.ceil(words / 220))});
   }
   return result.sort((a, b) => (b.date || b.published || b.written).localeCompare(a.date || a.published || a.written) || a.order - b.order || a.slug.localeCompare(b.slug));
-}
-
-function diagramDocument(kind) {
-  const configurations = {
-    'gpu-memory': { labels: ['Device memory', 'Reusable tile', 'Arithmetic'], note: 'Load once. Use the same values again.', lines: [['HBM / GDDR', 98], ['shared memory', 348], ['compute units', 598]] },
-    monolith: {labels: ['API + modules', 'Measured work', 'Database'], note: 'Start with a boundary you can explain.', lines: [['one deployable', 98], ['a clear interface', 348], ['one source of truth', 598]]},
-    'route-pipeline': {labels: ['Input stops', 'Candidate groups', 'Ordered visits'], note: 'Grouping stops is one stage of route planning.', lines: []},
-    retry: {labels: ['Attempt 1', 'Payment service', 'Stored result'], note: 'The retry carries the same operation key.', lines: [['key: order_42', 98], ['deduplicate key', 348], ['one operation', 598]]}
-  };
-  const cfg = configurations[kind];
-  const elements = [];
-  const common = {angle: 0, strokeColor: '#7360b6', backgroundColor: 'transparent', fillStyle: 'hachure', strokeWidth: 1.5, strokeStyle: 'solid', roughness: 1, opacity: 100, groupIds: [], frameId: null, roundness: null, seed: 42, version: 1, versionNonce: 1, isDeleted: false, boundElements: null, updated: 1, link: null, locked: false};
-  cfg.labels.forEach((label, i) => {
-    elements.push({...common, id: `${kind}-box-${i}`, type: 'rectangle', x: 35 + i * 250, y: 45, width: 180, height: 90});
-    elements.push({...common, id: `${kind}-text-${i}`, type: 'text', x: 50 + i * 250, y: 78, width: 155, height: 25, text: label, originalText: label, fontSize: 18, fontFamily: 1, textAlign: 'center', verticalAlign: 'top', containerId: null, lineHeight: 1.25, autoResize: true});
-    if (i < 2) elements.push({...common, id: `${kind}-arrow-${i}`, type: 'arrow', x: 220 + i * 250, y: 90, width: 55, height: 0, points: [[0, 0], [55, 0]], startBinding: null, endBinding: null, startArrowhead: null, endArrowhead: 'arrow', elbowed: false});
-  });
-  return {document: {type: 'excalidraw', version: 2, source: 'https://excalidraw.com', elements, appState: {viewBackgroundColor: '#ffffff', gridSize: null}, files: {}}, cfg};
 }
 
 export async function build({outDir = path.join(root, 'dist'), preview = process.env.PREVIEW_DRAFTS === '1', basePath = process.env.BASE_PATH || '', siteUrl = process.env.SITE_URL || '', postsDirectory = path.join(root, 'content/posts'), goatcounterUrl = process.env.GOATCOUNTER_URL || ''} = {}) {
@@ -104,27 +86,12 @@ export async function build({outDir = path.join(root, 'dist'), preview = process
     await write('feed.xml',`<?xml version="1.0" encoding="UTF-8"?><rss version="2.0"><channel><title>Valentino / Writing</title><link>${escape(absolute('/'))}</link><description>Notes on AI, systems, design, and other things.</description>${published.map(p=>`<item><title>${escape(p.title)}</title><link>${escape(absolute(`/writing/${p.slug}/`))}</link><guid>${escape(absolute(`/writing/${p.slug}/`))}</guid><pubDate>${new Date(p.published).toUTCString()}</pubDate><description>${escape(p.description)}</description></item>`).join('')}</channel></rss>`);
     await write('sitemap.xml',`<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">${['/',...published.map(p=>`/writing/${p.slug}/`)].map(route=>`<url><loc>${escape(absolute(route))}</loc></url>`).join('')}</urlset>`);
   }
-  const generator=rough.generator();
-  await mkdir(path.join(outDir,'diagrams'),{recursive:true});
-  for(const kind of ['gpu-memory','monolith','retry','route-pipeline']) {
-    const {document: initialDocument,cfg}=diagramDocument(kind);
-    const sourceFile=path.join(root,`content/diagrams/${kind}.excalidraw`);
-    let scene;
-    try {scene=await readFile(sourceFile,'utf8');} catch(error) {if(error.code!=='ENOENT') throw error; scene=JSON.stringify(initialDocument,null,2); await writeFile(sourceFile,scene);}
-    const document=JSON.parse(scene);
-    if(document.type!=='excalidraw' || !Array.isArray(document.elements)) throw new Error(`Invalid Excalidraw scene: ${kind}`);
-    const paths=[];
-    for(const element of document.elements) {
-      if(element.isDeleted) continue;
-      if(!['text','rectangle','arrow','line','ellipse'].includes(element.type)) throw new Error(`Unsupported diagram element ${element.type} in ${kind}; export this scene from Excalidraw directly.`);
-      if(element.type==='text') { paths.push(`<text x="${element.x+element.width/2}" y="${element.y+20}" text-anchor="middle" font-size="18">${escape(element.text)}</text>`); continue; }
-      const shape=element.type==='rectangle' ? generator.rectangle(element.x,element.y,element.width,element.height,{seed:42,roughness:1,stroke:'#7360b6',strokeWidth:1.4}) : element.type==='ellipse' ? generator.ellipse(element.x+element.width/2,element.y+element.height/2,element.width,element.height,{seed:42,stroke:'#7360b6',strokeWidth:1.4}) : generator.linearPath((element.points || [[0,0],[element.width,element.height]]).map(([x,y])=>[element.x+x,element.y+y]),{seed:42,stroke:'#7360b6',strokeWidth:1.4});
-      paths.push(...generator.toPaths(shape).map(p=>`<path d="${p.d}" fill="${p.fill || 'none'}" stroke="${p.stroke}" stroke-width="${p.strokeWidth}"/>`));
-      if(element.type==='arrow') paths.push(`<path d="m${element.x+element.width-8} ${element.y-5} 8 5 -8 5" fill="none" stroke="#7360b6" stroke-width="1.4"/>`);
-    }
-    paths.push(`<text x="375" y="192" text-anchor="middle" font-size="14">${escape(cfg.note)}</text>`);
-    await write(`diagrams/${kind}.svg`,`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 750 225" fill="#645782" font-family="ui-monospace,monospace" role="img"><title>${escape(cfg.note)}</title>${paths.join('')}</svg>`);
-    await write(`diagrams/${kind}.excalidraw`,scene);
+  const diagramDirectory=path.join(root,'content/diagrams');
+  for(const name of (await readdir(diagramDirectory)).filter(name=>name.endsWith('.excalidraw')).sort()) {
+    const source=await readFile(path.join(diagramDirectory,name),'utf8');
+    const scene=JSON.parse(source);
+    await write(`diagrams/${name.replace(/\.excalidraw$/,'.svg')}`,renderDiagram(scene));
+    await write(`diagrams/${name}`,source);
   }
   console.log(`Built ${posts.length} articles (${published.length} published) into ${outDir}${base ? ` at ${base}` : ''}`);
   return {posts,published,outDir};
